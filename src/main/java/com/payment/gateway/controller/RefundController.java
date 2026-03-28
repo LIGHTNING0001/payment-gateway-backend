@@ -1,10 +1,10 @@
 package com.payment.gateway.controller;
 
-import com.payment.gateway.service.RefundService;
-import com.payment.gateway.utils.RSA2Helper;
-import com.payment.gateway.utils.CFCAHelper;
+import com.alibaba.fastjson.JSONObject;
+import com.payment.gateway.enums.MerchantEnum;
+import com.payment.gateway.utils.HttpClient;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,98 +14,71 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/pay/refund")
+@Slf4j
 public class RefundController {
-
-    @Autowired
-    private RefundService refundService;
-
-    @Value("${security.rsa2.private-key-path}")
-    private String rsa2PrivateKeyPath;
-
-    @Value("${security.rsa2.public-key-path}")
-    private String rsa2PublicKeyPath;
-
-    @Value("${security.rsa2.private-key-pwd}")
-    private String rsa2PrivateKeyPwd;
-
-    @Value("${security.cfca.private-key-path}")
-    private String cfcaPrivateKeyPath;
-
-    @Value("${security.cfca.public-key-path}")
-    private String cfcaPublicKeyPath;
-
-    @Value("${security.cfca.private-key-pwd}")
-    private String cfcaPrivateKeyPwd;
 
     @PostMapping("")
     public Map<String, Object> createRefund(@RequestBody Map<String, Object> request) {
-        // 验签
-        String signType = request.get("signType").toString();
-        String sign = request.get("sign").toString();
-        String signContent = request.get("signContent").toString();
+        log.info("=== 退款申请接口请求参数 === \n");
+        log.info(JSONObject.toJSONString(request, true));
+
         String merchantNo = request.get("merchantNo").toString();
-
-        boolean verifyResult = false;
-        if (signType.equals("RSA2")) {
-            verifyResult = RSA2Helper.verify(signContent, sign, rsa2PublicKeyPath);
-        } else if (signType.equals("CFCA")) {
-            verifyResult = CFCAHelper.verify(signContent, sign, cfcaPublicKeyPath);
+        MerchantEnum merchantEnum = MerchantEnum.explain(merchantNo);
+        if (merchantEnum == null) {
+            throw new RuntimeException("商户不存在");
         }
 
-        if (!verifyResult) {
-            throw new RuntimeException("验签失败");
+        Map<String, String> paymentRequest = new java.util.HashMap<>();
+        paymentRequest.put("version", request.get("version").toString());
+        paymentRequest.put("format", request.get("format").toString());
+        paymentRequest.put("merchantNo", merchantNo);
+        paymentRequest.put("signType", merchantEnum.getSignType());
+        paymentRequest.put("method", "POLYMERIZE_REFUND");
+        paymentRequest.put("signContent", JSONObject.toJSONString(request.get("signContent")));
+
+        HttpClient httpClient = new HttpClient();
+        JSONObject response;
+        try {
+            response = httpClient.post(paymentRequest, merchantEnum.getUrl() + "/api/acquiring", merchantEnum);
+        } catch (Exception e) {
+            throw new RuntimeException("请求支付系统失败: " + e.getMessage());
         }
 
-        // 解析signContent
-        Map<String, Object> signContentMap = com.alibaba.fastjson.JSON.parseObject(signContent, Map.class);
-
-        // 创建退款
-        com.payment.gateway.entity.Refund refund = refundService.createRefund(signContentMap, merchantNo);
-
-        // 返回结果
-        Map<String, Object> result = new java.util.HashMap<>();
-        result.put("transNo", refund.getTransNo());
-        result.put("origTransNo", refund.getOrigTransNo());
-        result.put("orderAmt", refund.getOrderAmt());
-        result.put("status", refund.getStatus());
-
-        return result;
+        log.info("=== 退款申请接口响应结果 === \n");
+        log.info(JSONObject.toJSONString(response, true));
+        return response;
     }
 
     @PostMapping("/query")
     public Map<String, Object> queryRefund(@RequestBody Map<String, Object> request) {
-        // 验签
-        String signType = request.get("signType").toString();
-        String sign = request.get("sign").toString();
-        String signContent = request.get("signContent").toString();
+        log.info("=== 退款查询接口请求参数 === \n");
+        log.info(JSONObject.toJSONString(request, true));
 
-        boolean verifyResult = false;
-        if (signType.equals("RSA2")) {
-            verifyResult = RSA2Helper.verify(signContent, sign, rsa2PublicKeyPath);
-        } else if (signType.equals("CFCA")) {
-            verifyResult = CFCAHelper.verify(signContent, sign, cfcaPublicKeyPath);
+        String merchantNo = request.get("merchantNo").toString();
+        MerchantEnum merchantEnum = MerchantEnum.explain(merchantNo);
+        if (merchantEnum == null) {
+            throw new RuntimeException("商户不存在");
         }
 
-        if (!verifyResult) {
-            throw new RuntimeException("验签失败");
+        Map<String, String> paymentRequest = new java.util.HashMap<>();
+        paymentRequest.put("version", request.get("version").toString());
+        paymentRequest.put("format", request.get("format").toString());
+        paymentRequest.put("merchantNo", merchantNo);
+        paymentRequest.put("signType", merchantEnum.getSignType());
+        paymentRequest.put("method", "POLYMERIZE_REFUND_QUERY");
+        paymentRequest.put("signContent", JSONObject.toJSONString(request.get("signContent")));
+
+        HttpClient httpClient = new HttpClient();
+        JSONObject response;
+        try {
+            response = httpClient.post(paymentRequest, merchantEnum.getUrl() + "/api/acquiring", merchantEnum);
+        } catch (Exception e) {
+            throw new RuntimeException("请求支付系统失败: " + e.getMessage());
         }
 
-        // 解析signContent
-        Map<String, Object> signContentMap = com.alibaba.fastjson.JSON.parseObject(signContent, Map.class);
-        String transNo = signContentMap.get("transNo").toString();
-
-        // 查询退款
-        com.payment.gateway.entity.Refund refund = refundService.queryRefund(transNo);
-
-        // 返回结果
-        Map<String, Object> result = new java.util.HashMap<>();
-        result.put("transNo", refund.getTransNo());
-        result.put("origTransNo", refund.getOrigTransNo());
-        result.put("orderAmt", refund.getOrderAmt());
-        result.put("status", refund.getStatus());
-        result.put("tradeNo", refund.getTradeNo());
-
-        return result;
+        log.info("=== 退款查询接口响应结果 === \n");
+        log.info(JSONObject.toJSONString(response, true));
+        return response;
     }
 
 }

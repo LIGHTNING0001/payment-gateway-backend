@@ -33,23 +33,6 @@ public class PaymentController {
     @Autowired
     private WechatService wechatService;
 
-    @Value("${security.rsa2.private-key-path}")
-    private String rsa2PrivateKeyPath;
-
-    @Value("${security.rsa2.public-key-path}")
-    private String rsa2PublicKeyPath;
-
-    @Value("${security.rsa2.private-key-pwd}")
-    private String rsa2PrivateKeyPwd;
-
-    @Value("${security.cfca.private-key-path}")
-    private String cfcaPrivateKeyPath;
-
-    @Value("${security.cfca.public-key-path}")
-    private String cfcaPublicKeyPath;
-
-    @Value("${security.cfca.private-key-pwd}")
-    private String cfcaPrivateKeyPwd;
 
     @PostMapping("/create")
     public String createOrder(@RequestBody Map<String, Object> request) {
@@ -180,46 +163,6 @@ public class PaymentController {
         System.out.println("success");
 
         return "success";
-    }
-
-    @PostMapping("/precreate")
-    public Map<String, Object> precreateOrder(@RequestBody Map<String, Object> request) {
-        // 打印请求参数
-        System.out.println("=== 预下单接口请求参数 ===");
-        System.out.println(com.alibaba.fastjson.JSON.toJSONString(request, true));
-
-        // 验签
-        String signType = request.get("signType").toString();
-        String sign = request.get("sign").toString();
-        String signContent = request.get("signContent").toString();
-        String merchantNo = request.get("merchantNo").toString();
-
-        boolean verifyResult = false;
-        if (signType.equals("RSA2")) {
-            verifyResult = RSA2Helper.verify(signContent, sign, rsa2PublicKeyPath);
-        } else if (signType.equals("CFCA")) {
-            verifyResult = CFCAHelper.verify(signContent, sign, cfcaPublicKeyPath);
-        }
-
-        if (!verifyResult) {
-            throw new RuntimeException("验签失败");
-        }
-
-        // 解析signContent
-        Map<String, Object> signContentMap = JSONObject.parseObject(request.get("signContent").toString(), Map.class);
-
-        // 生成预下单参数
-        Map<String, Object> result = new java.util.HashMap<>();
-        result.put("merchantNo", merchantNo);
-        result.put("signType", signType);
-        result.put("signContent", signContentMap);
-        result.put("sign", sign);
-
-        // 打印响应结果
-        System.out.println("=== 预下单接口响应结果 ===");
-        System.out.println(com.alibaba.fastjson.JSON.toJSONString(result, true));
-
-        return result;
     }
 
 }
