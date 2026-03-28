@@ -6,7 +6,7 @@
 *.DS_Store
 *.swp
 *.out
-target/
+target/*
 *.iml
 *.ipr
 *.iws
@@ -15,7 +15,7 @@ target/
 .classpath
 .project
 .metadata/
-.idea/
+.idea/*
 logs/
 *.log
 dependency-reduced-pom.xml
