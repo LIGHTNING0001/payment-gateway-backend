@@ -44,7 +44,7 @@ public class Order {
     @Column(name = "notify_url")
     private String notifyUrl;
 
-    @Column(name = "qr_code")
+    @Column(name = "qr_code", columnDefinition = "text")
     private String qrCode;
 
     @Column(name = "trade_no")

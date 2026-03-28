@@ -4,7 +4,7 @@ public enum MerchantEnum {
 
     MCH_891065321967_DEV(
             "891065321967",
-            "",
+            "支付宝渠道商户",
             "RSA2",
             "certificate/MANDAO_891065321967_pub.cer",
             "certificate/RSA2_pri.pfx",

@@ -1,21 +1,20 @@
 package com.payment.gateway.controller;
 
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.payment.gateway.service.PaymentService;
 import com.payment.gateway.service.AlipayService;
+import com.payment.gateway.service.NotifyBroadcastService;
 import com.payment.gateway.service.WechatService;
-import com.payment.gateway.utils.RSA2Helper;
-import com.payment.gateway.utils.CFCAHelper;
 import com.payment.gateway.utils.HttpClient;
 import com.payment.gateway.enums.MerchantEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.Map;
 
@@ -32,6 +31,9 @@ public class PaymentController {
 
     @Autowired
     private WechatService wechatService;
+
+    @Autowired
+    private NotifyBroadcastService notifyBroadcastService;
 
 
     @PostMapping("/create")
@@ -128,11 +130,15 @@ public class PaymentController {
         return response;
     }
 
+    @GetMapping("/notify/stream")
+    public SseEmitter notifyStream() {
+        return notifyBroadcastService.subscribe();
+    }
+
     @PostMapping("/notify")
     public String notify(@RequestBody Map<String, Object> request) {
-        // 打印请求参数
-        System.out.println("=== 异步通知回调接口请求参数 ===");
-        System.out.println(com.alibaba.fastjson.JSON.toJSONString(request, true));
+        log.info("=== 异步通知回调接口请求参数 ===");
+        log.info(com.alibaba.fastjson.JSON.toJSONString(request, true));
 
         // 验证通知来源
         String channel = request.get("channel").toString();
@@ -157,6 +163,7 @@ public class PaymentController {
         String status = request.get("status").toString();
 
         paymentService.notify(transNo, tradeNo, status);
+        notifyBroadcastService.broadcast(request);
 
         // 打印响应结果
         System.out.println("=== 异步通知回调接口响应结果 ===");
