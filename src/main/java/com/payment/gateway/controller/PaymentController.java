@@ -132,6 +132,7 @@ public class PaymentController {
 
     @GetMapping("/notify/stream")
     public SseEmitter notifyStream() {
+        log.info("客户端订阅交易通知");
         return notifyBroadcastService.subscribe();
     }
 
@@ -157,17 +158,11 @@ public class PaymentController {
             return "fail";
         }
 
-        // 处理通知
-        String transNo = request.get("transNo").toString();
-        String tradeNo = request.get("tradeNo").toString();
-        String status = request.get("status").toString();
-
-        paymentService.notify(transNo, tradeNo, status);
         notifyBroadcastService.broadcast(request);
 
         // 打印响应结果
-        System.out.println("=== 异步通知回调接口响应结果 ===");
-        System.out.println("success");
+        log.info("=== 异步通知回调接口响应结果 ===");
+        log.info("success");
 
         return "success";
     }
