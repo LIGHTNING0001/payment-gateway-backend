@@ -6,17 +6,22 @@ import com.payment.gateway.service.AlipayService;
 import com.payment.gateway.service.NotifyBroadcastService;
 import com.payment.gateway.service.WechatService;
 import com.payment.gateway.utils.HttpClient;
+import com.payment.gateway.utils.RSA2Helper;
+import com.payment.gateway.utils.RSAHelper;
 import com.payment.gateway.enums.MerchantEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.springframework.http.MediaType;
 
 import java.util.Map;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/pay")
@@ -136,35 +141,102 @@ public class PaymentController {
         return notifyBroadcastService.subscribe();
     }
 
-    @PostMapping("/notify")
-    public String notify(@RequestBody Map<String, Object> request) {
+    @PostMapping(value = "/notify", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public Map<String, Object> notifyJson(@RequestBody Map<String, Object> request) {
+        return handleNotify(request);
+    }
+
+    @PostMapping(value = "/notify", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    public Map<String, Object> notifyForm(@RequestParam Map<String, String> request) {
+        Map<String, Object> normalized = new HashMap<>(request);
+        return handleNotify(normalized);
+    }
+
+    private Map<String, Object> handleNotify(Map<String, Object> request) {
         log.info("=== 异步通知回调接口请求参数 ===");
         log.info(com.alibaba.fastjson.JSON.toJSONString(request, true));
 
-        // 验证通知来源
-        String channel = request.get("channel").toString();
-        boolean verifyResult = false;
-
-        if (channel.equals("alipay")) {
-            verifyResult = alipayService.verifyNotify(request);
-        } else if (channel.equals("wechat")) {
-            verifyResult = wechatService.verifyNotify(request);
+        String merchantNo = getRequiredString(request, "merchantNo");
+        MerchantEnum merchantEnum = MerchantEnum.explain(merchantNo);
+        if (merchantEnum == null) {
+            throw new RuntimeException("商户不存在");
         }
 
-        if (!verifyResult) {
-            // 打印响应结果
-            System.out.println("=== 异步通知回调接口响应结果 ===");
-            System.out.println("fail");
-            return "fail";
+        String merchantSignType = merchantEnum.getSignType();
+        String requestSignType = stringValue(request.get("signType"));
+        if (!merchantSignType.equals(requestSignType)) {
+            log.warn("回调signType与商户配置不一致, merchantNo={}, requestSignType={}, merchantSignType={}",
+                    merchantNo, requestSignType, merchantSignType);
         }
 
-        notifyBroadcastService.broadcast(request);
+        String signContentRaw = getRequiredString(request, "signContent");
+        Map<String, Object> signContent;
+        boolean verifySuccess = true;
+        if ("RSA2".equals(merchantSignType)) {
+            String sign = getRequiredString(request, "sign");
+            String verifyPlainText = buildNotifySignSource(request, merchantEnum, signContentRaw);
+            verifySuccess = RSA2Helper.verify(verifyPlainText, sign,
+                    getClass().getClassLoader().getResource(merchantEnum.getPublicKey()).getPath());
+            if (!verifySuccess) {
+                throw new RuntimeException("通知验签失败");
+            }
+            signContent = parseSignContent(signContentRaw);
+        } else if ("CFCA".equals(merchantSignType)) {
+            String decryptedSignContent;
+            try {
+                decryptedSignContent = RSAHelper.decrypt(signContentRaw,
+                        getClass().getClassLoader().getResource(merchantEnum.getPublicKey()).getPath());
+            } catch (Exception e) {
+                throw new RuntimeException("CFCA回调解密失败: " + e.getMessage(), e);
+            }
+            signContent = parseSignContent(decryptedSignContent);
+        } else {
+            throw new RuntimeException("不支持的签名类型: " + merchantSignType);
+        }
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("merchantNo", merchantNo);
+        response.put("method", stringValue(request.get("method")));
+        response.put("version", stringValue(request.get("version")));
+        response.put("signType", merchantSignType);
+        response.put("verifySuccess", verifySuccess);
+        response.put("signContent", signContent);
+        response.put("success", true);
+
+        notifyBroadcastService.broadcast(response);
 
         // 打印响应结果
         log.info("=== 异步通知回调接口响应结果 ===");
-        log.info("success");
+        log.info(JSONObject.toJSONString(response, true));
 
-        return "success";
+        return response;
     }
 
+    private String buildNotifySignSource(Map<String, Object> request, MerchantEnum merchantEnum, String signContent) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("method=").append(stringValue(request.get("method")));
+        sb.append("&version=").append(stringValue(request.get("version")));
+        sb.append("&format=").append(stringValue(request.get("format")));
+        sb.append("&merchantNo=").append(merchantEnum.getMerchantNo());
+        sb.append("&signType=").append(merchantEnum.getSignType());
+        sb.append("&signContent=").append(signContent);
+        sb.append("&key=").append(merchantEnum.getPwd());
+        return sb.toString();
+    }
+
+    private Map<String, Object> parseSignContent(String signContent) {
+        return JSONObject.parseObject(signContent, new com.alibaba.fastjson.TypeReference<Map<String, Object>>() {});
+    }
+
+    private String getRequiredString(Map<String, Object> request, String key) {
+        String value = stringValue(request.get(key));
+        if (value == null || value.isEmpty()) {
+            throw new RuntimeException("缺少参数: " + key);
+        }
+        return value;
+    }
+
+    private String stringValue(Object value) {
+        return value == null ? "" : String.valueOf(value);
+    }
 }
