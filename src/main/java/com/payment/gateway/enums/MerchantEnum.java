@@ -15,7 +15,7 @@ public enum MerchantEnum {
     // 移企付-间连商户
     MCH_841508774642_DEV(
             "841508774642",
-            "",
+            "移企付-间连商户",
             "RSA2",
             "certificate/MANDAO_841508774642_pub.cer",
             "certificate/RSA2_pri.pfx",
@@ -26,7 +26,7 @@ public enum MerchantEnum {
     // 移企付-直连商户
     MCH_890943339002_DEV(
             "890943339002",
-            "",
+            "移企付-直连商户",
             "RSA2",
             "certificate/MANDAO_890943339002_pub.cer",
             "certificate/RSA2_pri.pfx",
@@ -37,7 +37,7 @@ public enum MerchantEnum {
 
     MCH_890905305161_DEV(
             "890905305161",
-            "",
+            "微企付渠道商户",
             "CFCA",
             "certificate/MANDAO_890905305161_pub.cer",
             "certificate/883007563082_pri.pfx",
@@ -48,7 +48,7 @@ public enum MerchantEnum {
 
     MCH_853943386352_DEV(
             "853943386352",
-            "",
+            "微信渠道商户",
             "CFCA",
             "certificate/MANDAO_853943386352_pub.cer",
             "certificate/883007563082_pri.pfx",
@@ -79,7 +79,7 @@ public enum MerchantEnum {
     ),
     MCH_817500561427_DEV(
             "817500561427",
-                    "",
+                    "微收银渠道商户",
                     "RSA2",
             "certificate/MANDAO_817500561427_pub.cer",
             "certificate/RSA2_pri.pfx",
@@ -113,7 +113,7 @@ public enum MerchantEnum {
 
     MCH_802001351142_DEV(
             "802001351142",
-            "",
+            "合利宝渠道",
             "CFCA",
             "certificate/MANDAO_802001351142_pub.cer",
             "certificate/883007563082_pri.pfx",
@@ -157,7 +157,7 @@ public enum MerchantEnum {
 
     MCH_816502003871_DEV(
             "816502003871",
-            "",
+            "宝付聚合",
             "RSA2",
             "certificate/MANDAO_816502003871_pub.cer",
             "certificate/self.p12",

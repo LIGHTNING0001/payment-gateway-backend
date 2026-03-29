@@ -18,12 +18,6 @@ public class PaymentService {
     @Autowired
     private OrderRepository orderRepository;
 
-    @Autowired
-    private AlipayService alipayService;
-
-    @Autowired
-    private WechatService wechatService;
-
     public Order createOrder(Map<String, Object> signContent, String merchantNo) {
         // 生成订单号
         String transNo = new SimpleDateFormat("yyyyMMddHHmmssss").format(new Date());

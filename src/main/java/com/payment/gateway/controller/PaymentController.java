@@ -2,9 +2,7 @@ package com.payment.gateway.controller;
 
 import com.alibaba.fastjson.JSONObject;
 import com.payment.gateway.service.PaymentService;
-import com.payment.gateway.service.AlipayService;
 import com.payment.gateway.service.NotifyBroadcastService;
-import com.payment.gateway.service.WechatService;
 import com.payment.gateway.utils.HttpClient;
 import com.payment.gateway.utils.RSA2Helper;
 import com.payment.gateway.utils.RSAHelper;
@@ -31,11 +29,6 @@ public class PaymentController {
     @Autowired
     private PaymentService paymentService;
 
-    @Autowired
-    private AlipayService alipayService;
-
-    @Autowired
-    private WechatService wechatService;
 
     @Autowired
     private NotifyBroadcastService notifyBroadcastService;
@@ -154,7 +147,7 @@ public class PaymentController {
 
     private Map<String, Object> handleNotify(Map<String, Object> request) {
         log.info("=== 异步通知回调接口请求参数 ===");
-        log.info(com.alibaba.fastjson.JSON.toJSONString(request, true));
+        log.info(JSONObject.toJSONString(request, true));
 
         String merchantNo = getRequiredString(request, "merchantNo");
         MerchantEnum merchantEnum = MerchantEnum.explain(merchantNo);
