@@ -32,7 +32,7 @@ public enum MerchantEnum {
             "certificate/RSA2_pri.pfx",
             "123456",
             "8ad9b8f430bc5c33dcbfb16f071f6f3d",
-            "http://10.254.145.190:7224"
+            "https://test-api.huishouqian.com"
     ),
 
     MCH_890905305161_DEV(
@@ -43,7 +43,7 @@ public enum MerchantEnum {
             "certificate/883007563082_pri.pfx",
             "123456",
             "2b990de81d1bdaf7128c3d4cc54321b3",
-            "http://10.254.145.190:7224"
+            "https://test-api.huishouqian.com"
     ),
 
     MCH_853943386352_DEV(
@@ -54,7 +54,7 @@ public enum MerchantEnum {
             "certificate/883007563082_pri.pfx",
             "123456",
             "8977713496040f501d621488461abcc0",
-            "http://10.254.145.190:7224"
+            "https://test-api.huishouqian.com"
     ),
 
     MCH_810074854851_PRO(
@@ -85,7 +85,7 @@ public enum MerchantEnum {
             "certificate/RSA2_pri.pfx",
             "123456",
             "49be18cd58f78881c197b3ce8bbdd4f4",
-            "http://10.254.145.190:7224"
+            "https://test-api.huishouqian.com"
     ),
 
     MCH_810073021248_PRO(
@@ -124,13 +124,13 @@ public enum MerchantEnum {
 
     MCH_815271709251_DEV(
             "815271709251",
-            "",
+            "微信B2b",
             "CFCA",
             "certificate/MANDAO_815271709251_pub.cer",
             "certificate/883007563082_pri.pfx",
             "123456",
             "b96f64a8f0dc75005488f0553e1b48e6",
-            "http://10.254.145.190:7224"
+            "https://test-api.huishouqian.com"
     ),
 
     MCH_805501002985_PRO(
@@ -163,7 +163,7 @@ public enum MerchantEnum {
             "certificate/self.p12",
             "KtYBnbVEotFvYEFm",
             "1fef4cbc2aa08cfdadce374aae16df8b",
-            "http://api-nh.kafuner.com"
+            "https://test-api.huishouqian.com"
     );
 
     String merchantNo;
