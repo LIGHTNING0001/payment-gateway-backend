@@ -42,22 +42,6 @@ public class PaymentService {
         return order;
     }
 
-    public Order queryOrder(String transNo) {
-        return orderRepository.findByTransNo(transNo);
-    }
-
-    public void notify(String transNo, String tradeNo, String status) {
-        Order order = orderRepository.findByTransNo(transNo);
-        if (order != null) {
-            order.setTradeNo(tradeNo);
-            order.setStatus(status);
-            orderRepository.save(order);
-
-            // 向商户的notifyUrl发送回调通知
-            // TODO: 实现回调通知逻辑
-        }
-    }
-
     public void updateOrder(Order order) {
         orderRepository.save(order);
     }

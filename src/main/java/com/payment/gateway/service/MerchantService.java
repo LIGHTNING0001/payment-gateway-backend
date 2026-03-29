@@ -32,9 +32,4 @@ public class MerchantService {
                 })
                 .collect(Collectors.toList());
     }
-
-    public Merchant getMerchantByNo(String merchantNo) {
-        return merchantRepository.findByMerchantNo(merchantNo);
-    }
-
 }
