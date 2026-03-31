@@ -7,6 +7,8 @@ import javax.crypto.Cipher;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.*;
 import java.security.cert.Certificate;
@@ -19,26 +21,15 @@ public class RSAHelper {
 
     public static String encrypt(String message, String privateKeyPath, String privateKeyPwd) throws IOException {
         //获取私钥
-        PrivateKey privateKey = loadPrivateKeyFromPKCS12(Files.readAllBytes(Paths.get(privateKeyPath)), privateKeyPwd);
+        PrivateKey privateKey = loadPrivateKeyFromPKCS12(readBytes(privateKeyPath), privateKeyPwd);
         return encryptByPrivateKey(Base64.getEncoder().encodeToString(message.getBytes()), privateKey);
     }
 
     public static String decrypt(String message, String publicKeyPath) throws Exception{
-        StringBuilder contentBuilder = new StringBuilder();
-
-        try (BufferedReader br = Files.newBufferedReader(Paths.get(publicKeyPath))) {
-            String currentLine;
-            while ((currentLine = br.readLine()) != null) {
-                if(!currentLine.startsWith("-")){
-                    contentBuilder.append(currentLine);
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        String contentBuilder = readKeyText(publicKeyPath);
         CertificateFactory e = CertificateFactory.getInstance("X509");
         Certificate certificate = e.generateCertificate(new ByteArrayInputStream(
-                Base64.getDecoder().decode(contentBuilder.toString())));
+                Base64.getDecoder().decode(contentBuilder)));
         PublicKey publicKey = certificate.getPublicKey();
         return decryptByPublicKey(message, publicKey);
     }
@@ -145,6 +136,64 @@ public class RSAHelper {
             e.printStackTrace();
         }
         return null;
+    }
+
+    private static String readKeyText(String location) {
+        StringBuilder contentBuilder = new StringBuilder();
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(openResource(location), StandardCharsets.UTF_8))) {
+            String currentLine;
+            while ((currentLine = br.readLine()) != null) {
+                if (!currentLine.startsWith("-")) {
+                    contentBuilder.append(currentLine);
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("读取文件时出错: " + e.getMessage());
+        }
+        return contentBuilder.toString();
+    }
+
+    private static byte[] readBytes(String location) throws IOException {
+        try (InputStream in = openResource(location)) {
+            return in.readAllBytes();
+        }
+    }
+
+    private static InputStream openResource(String location) throws IOException {
+        if (location == null || location.trim().isEmpty()) {
+            throw new FileNotFoundException("证书路径为空");
+        }
+
+        String normalized = location.trim();
+        if (normalized.startsWith("classpath:")) {
+            InputStream in = getClassLoader().getResourceAsStream(normalized.substring("classpath:".length()));
+            if (in == null) {
+                throw new FileNotFoundException("classpath资源不存在: " + location);
+            }
+            return in;
+        }
+
+        try {
+            Path path = Paths.get(normalized);
+            if (Files.exists(path)) {
+                return Files.newInputStream(path);
+            }
+        } catch (InvalidPathException ignored) {
+            // fallback to classpath loading below
+        }
+
+        String resourcePath = normalized.startsWith("/") ? normalized.substring(1) : normalized;
+        InputStream in = getClassLoader().getResourceAsStream(resourcePath);
+        if (in != null) {
+            return in;
+        }
+
+        throw new FileNotFoundException("找不到证书资源: " + location);
+    }
+
+    private static ClassLoader getClassLoader() {
+        ClassLoader context = Thread.currentThread().getContextClassLoader();
+        return context != null ? context : RSAHelper.class.getClassLoader();
     }
 
 

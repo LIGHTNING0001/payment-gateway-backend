@@ -36,7 +36,7 @@ public class HttpClient {
         } else if ("CFCA".equals(merchantEnum.getSignType())){
             // 加密
             map.put("signContent", RSAHelper.encrypt(map.get("signContent"),
-                    getClass().getClassLoader().getResource(merchantEnum.getPrivateKey()).getPath(),
+                    merchantEnum.getPrivateKey(),
                     merchantEnum.getPriKeyPass()));
         }
 
@@ -76,7 +76,7 @@ public class HttpClient {
             respJSON.put("result", new String(
                     Base64.getDecoder().decode(
                         RSAHelper.decrypt(respJSON.getString("result"),
-                        getClass().getClassLoader().getResource(merchantEnum.getPublicKey()).getPath())
+                        merchantEnum.getPublicKey())
                     ), StandardCharsets.UTF_8));
 
             System.out.println("解密后的报文：" + respJSON.getString("result"));
@@ -97,7 +97,7 @@ public class HttpClient {
         sb.append("&key=" + merchantEnum.getPwd());
 
         return RSA2Helper.sign(sb.toString(),
-                getClass().getClassLoader().getResource(merchantEnum.getPrivateKey()).getPath(),
+                merchantEnum.getPrivateKey(),
                 merchantEnum.getPriKeyPass());
     }
 
@@ -115,7 +115,7 @@ public class HttpClient {
         ss.append("&key=" + merchantEnum.getPwd());
 
         boolean result = RSA2Helper.verify(ss.toString(), respJson.getString("sign"),
-                getClass().getClassLoader().getResource(merchantEnum.getPublicKey()).getPath());
+                merchantEnum.getPublicKey());
         System.out.println("验签结果：" + result);
 
         if (!result) {

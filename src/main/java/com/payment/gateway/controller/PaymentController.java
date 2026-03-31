@@ -168,8 +168,7 @@ public class PaymentController {
         if ("RSA2".equals(merchantSignType)) {
             String sign = getRequiredString(request, "sign");
             String verifyPlainText = buildNotifySignSource(request, merchantEnum, signContentRaw);
-            verifySuccess = RSA2Helper.verify(verifyPlainText, sign,
-                    getClass().getClassLoader().getResource(merchantEnum.getPublicKey()).getPath());
+            verifySuccess = RSA2Helper.verify(verifyPlainText, sign, merchantEnum.getPublicKey());
             if (!verifySuccess) {
                 throw new RuntimeException("通知验签失败");
             }
@@ -177,8 +176,7 @@ public class PaymentController {
         } else if ("CFCA".equals(merchantSignType)) {
             String decryptedSignContent;
             try {
-                decryptedSignContent = RSAHelper.decrypt(signContentRaw,
-                        getClass().getClassLoader().getResource(merchantEnum.getPublicKey()).getPath());
+                decryptedSignContent = RSAHelper.decrypt(signContentRaw, merchantEnum.getPublicKey());
             } catch (Exception e) {
                 throw new RuntimeException("CFCA回调解密失败: " + e.getMessage(), e);
             }

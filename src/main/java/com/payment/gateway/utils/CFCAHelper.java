@@ -6,6 +6,8 @@ import javax.crypto.Cipher;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.*;
 import java.security.cert.Certificate;
@@ -28,7 +30,7 @@ public class CFCAHelper {
     public static String sign(String data, String privateKeyPath, String privateKeyPwd) {
         try{
             //获取私钥
-            PrivateKey privateKey = loadPrivateKeyFromPKCS12(Files.readAllBytes(Paths.get(privateKeyPath)), privateKeyPwd);
+            PrivateKey privateKey = loadPrivateKeyFromPKCS12(readBytes(privateKeyPath), privateKeyPwd);
             //获取签名对象
             Signature signature = Signature.getInstance("SHA1WithRSA");
             signature.initSign(privateKey);
@@ -50,19 +52,7 @@ public class CFCAHelper {
      * @return
      */
     public static boolean verify(String data, String sign, String publicKeyPath)  {
-
-        StringBuilder contentBuilder = new StringBuilder();
-        try (BufferedReader br = new BufferedReader(new FileReader(publicKeyPath))) {
-            String currentLine;
-            while ((currentLine = br.readLine()) != null) {
-                if(!currentLine.startsWith("-")) {
-                    contentBuilder.append(currentLine);
-                }
-            }
-        } catch (IOException e) {
-            System.out.println("读取文件时出错: " + e.getMessage());
-        }
-        PublicKey publicKey = getPublicKeyByText(contentBuilder.toString());
+        PublicKey publicKey = getPublicKeyByText(readKeyText(publicKeyPath));
         Signature signature;
         try {
             signature = Signature.getInstance("SHA1WithRSA");
@@ -76,18 +66,7 @@ public class CFCAHelper {
     }
 
     public static String encryptByPublicKey(String data, String publicKeyPath){
-        StringBuilder contentBuilder = new StringBuilder();
-        try (BufferedReader br = new BufferedReader(new FileReader(publicKeyPath))) {
-            String currentLine;
-            while ((currentLine = br.readLine()) != null) {
-                if(!currentLine.startsWith("-")) {
-                    contentBuilder.append(currentLine);
-                }
-            }
-        } catch (IOException e) {
-            System.out.println("读取文件时出错: " + e.getMessage());
-        }
-        PublicKey publicKey = getPublicKeyByText(contentBuilder.toString());
+        PublicKey publicKey = getPublicKeyByText(readKeyText(publicKeyPath));
 
         return encryptByPublicKey(data, publicKey);
     }
@@ -98,7 +77,7 @@ public class CFCAHelper {
 
     public static String decryptByPrivateKey(String encryptedData, String privateKeyPath, String privateKeyPwd) {
         try {
-            PrivateKey privateKey = loadPrivateKeyFromPKCS12(Files.readAllBytes(Paths.get(privateKeyPath)), privateKeyPwd);
+            PrivateKey privateKey = loadPrivateKeyFromPKCS12(readBytes(privateKeyPath), privateKeyPwd);
             byte[] destBytes = decryptBySegments(BaseEncoding.base16().lowerCase().decode(encryptedData), privateKey);
             return new String(destBytes, StandardCharsets.UTF_8);
         } catch (Exception e) {
@@ -203,6 +182,64 @@ public class CFCAHelper {
             System.out.println("解析公钥内容失败:" + var6);
             return null;
         }
+    }
+
+    private static String readKeyText(String location) {
+        StringBuilder contentBuilder = new StringBuilder();
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(openResource(location), StandardCharsets.UTF_8))) {
+            String currentLine;
+            while ((currentLine = br.readLine()) != null) {
+                if (!currentLine.startsWith("-")) {
+                    contentBuilder.append(currentLine);
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("读取文件时出错: " + e.getMessage());
+        }
+        return contentBuilder.toString();
+    }
+
+    private static byte[] readBytes(String location) throws IOException {
+        try (InputStream in = openResource(location)) {
+            return in.readAllBytes();
+        }
+    }
+
+    private static InputStream openResource(String location) throws IOException {
+        if (location == null || location.trim().isEmpty()) {
+            throw new FileNotFoundException("证书路径为空");
+        }
+
+        String normalized = location.trim();
+        if (normalized.startsWith("classpath:")) {
+            InputStream in = getClassLoader().getResourceAsStream(normalized.substring("classpath:".length()));
+            if (in == null) {
+                throw new FileNotFoundException("classpath资源不存在: " + location);
+            }
+            return in;
+        }
+
+        try {
+            Path path = Paths.get(normalized);
+            if (Files.exists(path)) {
+                return Files.newInputStream(path);
+            }
+        } catch (InvalidPathException ignored) {
+            // fallback to classpath loading below
+        }
+
+        String resourcePath = normalized.startsWith("/") ? normalized.substring(1) : normalized;
+        InputStream in = getClassLoader().getResourceAsStream(resourcePath);
+        if (in != null) {
+            return in;
+        }
+
+        throw new FileNotFoundException("找不到证书资源: " + location);
+    }
+
+    private static ClassLoader getClassLoader() {
+        ClassLoader context = Thread.currentThread().getContextClassLoader();
+        return context != null ? context : CFCAHelper.class.getClassLoader();
     }
 
 }
