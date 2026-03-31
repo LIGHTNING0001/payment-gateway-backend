@@ -164,8 +164,18 @@ public enum MerchantEnum {
             "KtYBnbVEotFvYEFm",
             "1fef4cbc2aa08cfdadce374aae16df8b",
             "https://test-api.huishouqian.com"
-    );
+    ),
 
+    MCH_891723898067_DEV(
+            "891723898067",
+            "国通星驿商户",
+            "CFCA",
+            "certificate/MANDAO_891723898067_pub.cer",
+            "certificate/883007563082_pri.pfx",
+            "123456",
+            "ff73973cf2bf8f00f13a89a2285bd5a0",
+            "https://test-api.huishouqian.com"
+    );
     String merchantNo;
     String merchantName;
     String signType;
