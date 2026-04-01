@@ -135,23 +135,24 @@ public class PaymentController {
     }
 
     @PostMapping(value = "/notify", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public Map<String, Object> notifyJson(@RequestBody Map<String, Object> request) {
+    public String notifyJson(@RequestBody Map<String, Object> request) {
         return handleNotify(request);
     }
 
     @PostMapping(value = "/notify", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public Map<String, Object> notifyForm(@RequestParam Map<String, String> request) {
+    public String notifyForm(@RequestParam Map<String, String> request) {
         Map<String, Object> normalized = new HashMap<>(request);
         return handleNotify(normalized);
     }
 
-    private Map<String, Object> handleNotify(Map<String, Object> request) {
+    private String handleNotify(Map<String, Object> request) {
         log.info("=== 异步通知回调接口请求参数 ===");
         log.info(JSONObject.toJSONString(request, true));
 
         String merchantNo = getRequiredString(request, "merchantNo");
         MerchantEnum merchantEnum = MerchantEnum.explain(merchantNo);
         if (merchantEnum == null) {
+            log.error("商户不存在");
             throw new RuntimeException("商户不存在");
         }
 
@@ -170,6 +171,7 @@ public class PaymentController {
             String verifyPlainText = buildNotifySignSource(request, merchantEnum, signContentRaw);
             verifySuccess = RSA2Helper.verify(verifyPlainText, sign, merchantEnum.getPublicKey());
             if (!verifySuccess) {
+                log.error("通知验签失败");
                 throw new RuntimeException("通知验签失败");
             }
             signContent = parseSignContent(signContentRaw);
@@ -178,10 +180,12 @@ public class PaymentController {
             try {
                 decryptedSignContent = RSAHelper.decrypt(signContentRaw, merchantEnum.getPublicKey());
             } catch (Exception e) {
+                log.error("CFCA回调解密失败");
                 throw new RuntimeException("CFCA回调解密失败: " + e.getMessage(), e);
             }
             signContent = parseSignContent(decryptedSignContent);
         } else {
+            log.error("不支持的签名类型");
             throw new RuntimeException("不支持的签名类型: " + merchantSignType);
         }
 
@@ -200,7 +204,7 @@ public class PaymentController {
         log.info("=== 异步通知回调接口响应结果 ===");
         log.info(JSONObject.toJSONString(response, true));
 
-        return response;
+        return "OK";
     }
 
     private String buildNotifySignSource(Map<String, Object> request, MerchantEnum merchantEnum, String signContent) {
