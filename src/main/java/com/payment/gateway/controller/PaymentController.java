@@ -45,6 +45,7 @@ public class PaymentController {
         String merchantNo = request.get("merchantNo").toString();
         MerchantEnum merchantEnum = MerchantEnum.explain(merchantNo);
         if (merchantEnum == null) {
+            log.error("统一收单接口-商户不存在, merchantNo={}", merchantNo);
             throw new RuntimeException("商户不存在");
         }
 
@@ -63,6 +64,7 @@ public class PaymentController {
         try {
             response = httpClient.post(paymentRequest, merchantEnum.getUrl() + "/api/acquiring", merchantEnum);
         } catch (Exception e) {
+            log.error("统一收单接口-请求支付系统失败, merchantNo={}, error={}", merchantNo, e.getMessage(), e);
             throw new RuntimeException("请求支付系统失败: " + e.getMessage());
         }
 
@@ -102,6 +104,7 @@ public class PaymentController {
         String merchantNo = request.get("merchantNo").toString();
         MerchantEnum merchantEnum = MerchantEnum.explain(merchantNo);
         if (merchantEnum == null) {
+            log.error("订单查询接口-商户不存在, merchantNo={}", merchantNo);
             throw new RuntimeException("商户不存在");
         }
 
@@ -119,6 +122,7 @@ public class PaymentController {
         try {
             response = httpClient.post(paymentRequest, merchantEnum.getUrl() + "/api/acquiring", merchantEnum);
         } catch (Exception e) {
+            log.error("订单查询接口-请求支付系统失败, merchantNo={}, error={}", merchantNo, e.getMessage(), e);
             throw new RuntimeException("请求支付系统失败: " + e.getMessage());
         }
 
@@ -199,7 +203,7 @@ public class PaymentController {
         response.put("signContent", signContent);
         response.put("success", true);
 
-        log.info("解密后报文：" + response);
+        log.info("解密后报文：{}", response);
         notifyBroadcastService.broadcast(response);
 
         // 打印响应结果
