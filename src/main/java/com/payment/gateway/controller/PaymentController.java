@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.springframework.http.MediaType;
 
+import java.util.Base64;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -178,7 +179,7 @@ public class PaymentController {
         } else if ("CFCA".equals(merchantSignType)) {
             String decryptedSignContent;
             try {
-                decryptedSignContent = RSAHelper.decrypt(signContentRaw, merchantEnum.getPublicKey());
+                decryptedSignContent = new String(Base64.getDecoder().decode(RSAHelper.decrypt(signContentRaw, merchantEnum.getPublicKey())), "UTF-8");
             } catch (Exception e) {
                 log.error("CFCA 回调解密失败");
                 throw new RuntimeException("CFCA回调解密失败: " + e.getMessage(), e);
