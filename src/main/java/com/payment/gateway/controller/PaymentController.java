@@ -189,6 +189,7 @@ public class PaymentController {
                 throw new RuntimeException("CFCA回调解密失败: " + e.getMessage(), e);
             }
             signContent = parseSignContent(decryptedSignContent);
+            log.info("解密后报文：{}", signContent);
         } else {
             log.error("不支持的签名类型");
             throw new RuntimeException("不支持的签名类型: " + merchantSignType);
@@ -203,14 +204,14 @@ public class PaymentController {
         response.put("signContent", signContent);
         response.put("success", true);
 
-        log.info("解密后报文：{}", response);
+
         notifyBroadcastService.broadcast(response);
 
         // 打印响应结果
         log.info("=== 异步通知回调接口响应结果 ===");
         log.info(JSONObject.toJSONString(response, true));
 
-        return "OK";
+        return "SUCCESS";
     }
 
     private String buildNotifySignSource(Map<String, Object> request, MerchantEnum merchantEnum, String signContent) {
