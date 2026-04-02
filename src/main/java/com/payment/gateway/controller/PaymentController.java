@@ -180,7 +180,7 @@ public class PaymentController {
             try {
                 decryptedSignContent = RSAHelper.decrypt(signContentRaw, merchantEnum.getPublicKey());
             } catch (Exception e) {
-                log.error("CFCA回调解密失败");
+                log.error("CFCA 回调解密失败");
                 throw new RuntimeException("CFCA回调解密失败: " + e.getMessage(), e);
             }
             signContent = parseSignContent(decryptedSignContent);
@@ -198,6 +198,7 @@ public class PaymentController {
         response.put("signContent", signContent);
         response.put("success", true);
 
+        log.info("解密后报文：" + response);
         notifyBroadcastService.broadcast(response);
 
         // 打印响应结果
