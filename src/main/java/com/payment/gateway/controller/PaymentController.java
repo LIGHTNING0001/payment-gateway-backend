@@ -133,6 +133,45 @@ public class PaymentController {
         return response;
     }
 
+    @PostMapping("/close")
+    public String closeOrder(@RequestBody Map<String, Object> request) {
+        // 打印请求参数
+        log.info("=== 订单关闭接口请求参数 === \n");
+        log.info(JSONObject.toJSONString(request, true));
+
+        // 获取商户信息
+        String merchantNo = request.get("merchantNo").toString();
+        MerchantEnum merchantEnum = MerchantEnum.explain(merchantNo);
+        if (merchantEnum == null) {
+            log.error("订单关闭接口-商户不存在, merchantNo={}", merchantNo);
+            throw new RuntimeException("商户不存在");
+        }
+
+        // 构建请求参数并调用真实关闭
+        Map<String, String> paymentRequest = new java.util.HashMap<>();
+        paymentRequest.put("version", request.get("version").toString());
+        paymentRequest.put("format", request.get("format").toString());
+        paymentRequest.put("merchantNo", merchantNo);
+        paymentRequest.put("signType", merchantEnum.getSignType());
+        paymentRequest.put("method", "POLYMERIZE_CLOSE");
+        paymentRequest.put("signContent", JSONObject.toJSONString(request.get("signContent")));
+
+        HttpClient httpClient = new HttpClient();
+        JSONObject response;
+        try {
+            response = httpClient.post(paymentRequest, merchantEnum.getUrl() + "/api/acquiring", merchantEnum);
+        } catch (Exception e) {
+            log.error("订单关闭接口-请求支付系统失败, merchantNo={}, error={}", merchantNo, e.getMessage(), e);
+            throw new RuntimeException("请求支付系统失败: " + e.getMessage());
+        }
+
+        // 打印响应结果
+        log.info("=== 订单关闭接口响应结果 === \n");
+        log.info(JSONObject.toJSONString(response, true));
+
+        return response.toJSONString();
+    }
+
     @GetMapping("/notify/stream")
     public SseEmitter notifyStream() {
         log.info("客户端订阅交易通知");
