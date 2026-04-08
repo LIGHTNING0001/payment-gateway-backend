@@ -2,6 +2,17 @@ package com.payment.gateway.enums;
 
 public enum MerchantEnum {
 
+    MCH_810089581038_PRO(
+            "810089581038",
+            "国通商户生产环境",
+            "CFCA",
+            "certificate/MANDAO_810089581038_pub.cer",
+            "certificate/883007563082_pri.pfx",
+            "123456",
+            "c5b302a2c106045a3633aa049f192c7f",
+            "https://api-pre.huishouqian.com"
+    ),
+
     MCH_891065321967_DEV(
             "891065321967",
             "支付宝渠道商户",
