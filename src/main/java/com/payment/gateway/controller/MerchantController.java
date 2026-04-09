@@ -37,7 +37,7 @@ public class MerchantController {
         Map<String, String> pre = new HashMap<>();
         pre.put("code", "pre");
         pre.put("name", "预生产环境");
-        pre.put("url","https://pre-api.huishouqian.com");
+        pre.put("url","https://api-pre.huishouqian.com");
 
         environments.add(pre);
         
